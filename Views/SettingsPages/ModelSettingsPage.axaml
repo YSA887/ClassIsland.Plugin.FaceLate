@@ -1,0 +1,141 @@
+<ci:SettingsPageBase x:Class="ClassIsland.Plugin.FaceLate.Views.SettingsPages.ModelSettingsPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="clr-namespace:ClassIsland.Plugin.FaceLate.Controls"
+                     mc:Ignorable="d"
+                     d:DesignHeight="620" d:DesignWidth="1060">
+    <ci:SettingsPageBase.Styles>
+        <Style Selector="TextBlock.groupLabel">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Opacity" Value="0.6"/>
+            <Setter Property="Margin" Value="2,5,0,0"/>
+        </Style>
+    </ci:SettingsPageBase.Styles>
+
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="0,0,0,24">
+
+            <TextBlock Classes="groupLabel" Text="识别模型"/>
+
+            <controls:SettingCard Title="使用哪款识别模型"
+                                  Subtitle="自动会挑磁盘上已有、精度更高的那款"
+                                  IconGlyph="&#xE9D9;">
+                <ComboBox x:Name="ComboRecognizer"
+                          Width="290"
+                          ItemsSource="{Binding RecognizerOptions}"
+                          SelectedItem="{Binding SelectedRecognizer, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding DisplayName}"/>
+                                <TextBlock Text="{Binding StatusText}" FontSize="11" Opacity="0.55"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </controls:SettingCard>
+
+            <TextBlock x:Name="TextRecognizerChosen" TextWrapping="Wrap" FontSize="12" Opacity="0.62"
+                       Margin="2,0,0,0"/>
+
+            <controls:SettingCard Title="模型状态"
+                                  Subtitle="展开可看文件路径"
+                                  IconGlyph="&#xE73E;">
+                <StackPanel Spacing="4" MaxWidth="420">
+                    <TextBlock x:Name="TextModelStatus" TextWrapping="Wrap" FontSize="12"/>
+                    <Expander Header="技术细节" IsExpanded="False" Padding="0" FontSize="11">
+                        <TextBlock x:Name="TextModelDetail" TextWrapping="Wrap" FontSize="11" Opacity="0.7"/>
+                    </Expander>
+                </StackPanel>
+            </controls:SettingCard>
+
+            <controls:SettingCard Title="允许联网下载模型"
+                                  Subtitle="学校网络下建议关闭"
+                                  IconGlyph="&#xE896;">
+                <ToggleSwitch IsChecked="{Binding Settings.AllowModelDownload, Mode=TwoWay}"
+                              OnContent="" OffContent=""/>
+            </controls:SettingCard>
+
+            <controls:SettingCard Title="模型操作"
+                                  Subtitle="一次下齐，之后换模型就不用联网"
+                                  IconGlyph="&#xE8B7;">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="操作 ▾" IsEnabled="{Binding Busy.IsIdle}">
+                        <Button.Flyout>
+                            <MenuFlyout>
+                                <MenuItem Header="载入 / 重新载入模型" Click="MenuLoadModel_OnClick"/>
+                                <MenuItem Header="下载全部识别模型…" Click="MenuDownloadAll_OnClick"/>
+                                <MenuItem Header="导入检测模型（.onnx）…" Click="MenuImportDetector_OnClick"/>
+                                <MenuItem Header="导入识别模型（.onnx）…" Click="MenuImportRecognizer_OnClick"/>
+                                <MenuItem Header="检查模型状态（写到日志）" Click="MenuScanModels_OnClick"/>
+                                <MenuItem Header="打开模型目录" Click="MenuOpenModelsFolder_OnClick"/>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                    <TextBlock x:Name="TextBusyHint" VerticalAlignment="Center" Opacity="0.7" FontSize="12"/>
+                </StackPanel>
+            </controls:SettingCard>
+
+            <TextBlock Classes="groupLabel" Text="识别参数"/>
+
+            <controls:SettingCard Title="比对相似度阈值"
+                                  Subtitle="判断是不是同一个人的门槛，每款模型不一样"
+                                  IconGlyph="&#xE8C8;">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <NumericUpDown x:Name="BoxThreshold" Width="120"
+                                   Minimum="0.05" Maximum="0.99" Increment="0.01"
+                                   Value="{Binding ThresholdValue, Mode=TwoWay}"/>
+                    <Button Content="恢复推荐值" Click="MenuResetThreshold_OnClick"/>
+                </StackPanel>
+            </controls:SettingCard>
+
+            <TextBlock x:Name="TextThresholdHint" TextWrapping="Wrap"
+                       Opacity="0.62" FontSize="12" Margin="2,0,0,0"/>
+
+            <controls:SettingCard Title="最少命中张数"
+                                  Subtitle="低于这个数不算识别到，用来挡误判"
+                                  IconGlyph="&#xE9D5;">
+                <NumericUpDown Width="120" Minimum="1" Maximum="10" Increment="1"
+                               Value="{Binding MinHitsValue, Mode=TwoWay}"/>
+            </controls:SettingCard>
+
+            <controls:SettingCard Title="最小人脸像素"
+                                  Subtitle="后排认不出就把它调小"
+                                  IconGlyph="&#xE7F4;">
+                <NumericUpDown Width="120" Minimum="20" Maximum="400" Increment="10"
+                               Value="{Binding MinFaceWidthValue, Mode=TwoWay}"/>
+            </controls:SettingCard>
+
+            <controls:SettingCard Title="流程耗时上限"
+                                  Subtitle="单位秒，超时中止"
+                                  IconGlyph="&#xE916;">
+                <NumericUpDown Width="120" Minimum="10" Maximum="600" Increment="10"
+                               Value="{Binding MaxDurationValue, Mode=TwoWay}"/>
+            </controls:SettingCard>
+
+            <TextBlock Classes="groupLabel" Text="高级"/>
+
+            <controls:SettingCard Title="检测模型路径"
+                                  Subtitle="留空自动查找"
+                                  IconGlyph="&#xE8A5;">
+                <TextBox Width="420" Watermark="留空则自动查找"
+                         Text="{Binding Settings.DetectorModelPath, Mode=TwoWay}"/>
+            </controls:SettingCard>
+
+            <controls:SettingCard Title="识别模型路径"
+                                  Subtitle="填了会盖过上面的模型选择"
+                                  IconGlyph="&#xE8A5;">
+                <TextBox Width="420" Watermark="留空则自动查找"
+                         Text="{Binding Settings.RecognizerModelPath, Mode=TwoWay}"/>
+            </controls:SettingCard>
+
+            <controls:ActivityLogView x:Name="LogView"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</ci:SettingsPageBase>

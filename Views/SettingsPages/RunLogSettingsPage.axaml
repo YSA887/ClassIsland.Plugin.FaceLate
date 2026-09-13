@@ -1,0 +1,49 @@
+<ci:SettingsPageBase x:Class="ClassIsland.Plugin.FaceLate.Views.SettingsPages.RunLogSettingsPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="clr-namespace:ClassIsland.Plugin.FaceLate.Controls"
+                     mc:Ignorable="d"
+                     d:DesignHeight="620" d:DesignWidth="1060">
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="0,0,0,24">
+
+            <controls:SettingCard Title="立即跑一次"
+                                  Subtitle="抓拍 → 检测 → 比对 → 出迟到名单，用来验证摄像头和识别效果"
+                                  IconGlyph="&#xE768;">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="立即识别一次" Click="ButtonRunNow_OnClick" IsEnabled="{Binding Busy.IsIdle}"/>
+                    <Button Content="刷新状态" Click="ButtonRefreshStatus_OnClick"/>
+                    <TextBlock x:Name="TextRunStatus" VerticalAlignment="Center" FontWeight="SemiBold"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </controls:SettingCard>
+
+            <StackPanel Spacing="6" IsVisible="{Binding Attendance.ProgressVisible}">
+                <TextBlock Text="{Binding Attendance.StageText}" Opacity="0.8" FontSize="12"/>
+                <ProgressBar Minimum="0" Maximum="100" Height="6"
+                             Value="{Binding Attendance.ProgressPercent}"/>
+            </StackPanel>
+
+            <Border CornerRadius="8" Padding="12"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="上次结果" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="TextRunDetail" TextWrapping="Wrap" Opacity="0.8" FontSize="12"/>
+                    <TextBlock x:Name="TextRunLate" TextWrapping="Wrap" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Border>
+
+            <controls:SettingCard Title="挂到自动化"
+                                  Subtitle="想跟着课表跑（比如晚自习单独考勤一次），到 ClassIsland「自动化」里建规则集，行动选「人脸考勤：执行一次考勤」"
+                                  IconGlyph="&#xE945;"/>
+
+            <controls:ActivityLogView x:Name="LogView"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</ci:SettingsPageBase>

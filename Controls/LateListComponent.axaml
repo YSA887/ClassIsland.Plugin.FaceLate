@@ -1,0 +1,57 @@
+<ci:ComponentBase x:Class="ClassIsland.Plugin.FaceLate.Controls.LateListComponent"
+                  x:TypeArguments="models:LateListComponentSettings"
+                  xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                  xmlns:models="clr-namespace:ClassIsland.Plugin.FaceLate.Models"
+                  mc:Ignorable="d"
+                  d:DesignHeight="120" d:DesignWidth="420">
+    <Border x:Name="RootCard"
+            CornerRadius="8"
+            Padding="12,8"
+            IsVisible="False"
+            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1">
+        <StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock x:Name="TitleText"
+                           FontWeight="Bold"
+                           FontSize="14"
+                           VerticalAlignment="Center"/>
+                <Border x:Name="CountBadge"
+                        IsVisible="False"
+                        CornerRadius="8"
+                        Padding="6,0"
+                        VerticalAlignment="Center"
+                        Background="#33D13438">
+                    <TextBlock x:Name="CountText"
+                               FontSize="12"
+                               FontWeight="Bold"
+                               Foreground="#D13438"/>
+                </Border>
+            </StackPanel>
+
+            <TextBlock x:Name="NamesText"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap"
+                       Margin="0,6,0,0"
+                       IsVisible="False"/>
+
+            <TextBlock x:Name="StatusText"
+                       FontSize="12"
+                       Opacity="0.75"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0"/>
+
+            <TextBlock x:Name="TimeText"
+                       FontSize="11"
+                       Opacity="0.6"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+    </Border>
+</ci:ComponentBase>

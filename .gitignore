@@ -1,0 +1,24 @@
+## 构建产物
+bin/
+obj/
+cipx/
+
+## IDE
+.vs/
+.idea/
+*.user
+*.suo
+
+## 运行时数据（插件配置目录里的东西不该进仓库）
+roster.json
+last-result.json
+Settings.json
+snapshots/
+faces/
+## 注意：不要写裸 `models/`，那会连 Assets/Models/ 一起排除，导致素材模型进不了仓库
+/models/
+
+## 人脸模型：随仓库一起发布，clone 后开箱即用。
+## SFace 37 MB + ArcFace 13 MB，都在 GitHub 单文件 100 MB 限制内。
+## 若想保持仓库轻量，可改为忽略并用 tools/download-models.ps1 下载。
+# Assets/Models/*.onnx

@@ -1,0 +1,57 @@
+<!--
+  设置卡片的 ControlTheme。
+  必须做成「模板」而不是带 XAML 内容的 UserControl —— 见 SettingCard.axaml.cs 里的说明。
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:ClassIsland.Plugin.FaceLate.Controls">
+
+    <ControlTheme x:Key="FaceLateSettingCardTheme" TargetType="controls:SettingCard">
+        <!-- 右侧控件默认靠右摆放 -->
+        <Setter Property="HorizontalContentAlignment" Value="Right"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Padding="14,10"
+                        CornerRadius="8"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                        <!-- 图标 -->
+                        <TextBlock Grid.Column="0"
+                                   Text="{TemplateBinding IconGlyph}"
+                                   FontFamily="{DynamicResource SymbolThemeFontFamily}"
+                                   FontSize="18"
+                                   Opacity="0.85"
+                                   VerticalAlignment="Center"
+                                   IsVisible="{TemplateBinding HasIcon}"/>
+
+                        <!-- 标题 + 一行副标题 -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{TemplateBinding Title}"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock Text="{TemplateBinding Subtitle}"
+                                       Margin="0,2,0,0"
+                                       FontSize="12"
+                                       Opacity="0.62"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{TemplateBinding HasSubtitle}"/>
+                        </StackPanel>
+
+                        <!-- 右侧控件（调用方写在标签里的内容） -->
+                        <ContentPresenter Grid.Column="2"
+                                          Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+</ResourceDictionary>

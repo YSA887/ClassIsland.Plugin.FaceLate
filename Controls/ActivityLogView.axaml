@@ -1,0 +1,68 @@
+<UserControl x:Class="ClassIsland.Plugin.FaceLate.Controls.ActivityLogView"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="640">
+    <!--
+      日志面板。
+      刻意做成「默认折叠 + 细节默认隐藏」：
+      以前每个页面都把模型路径、查找目录、每张照片的中间结果全铺在界面上，
+      一进页面就是十几行技术信息，既繁琐又挡视野。现在一眼只看得到结论，
+      要排查问题再展开、再打开「显示详细信息」。
+    -->
+    <Expander HorizontalAlignment="Stretch" IsExpanded="False" Padding="0">
+        <Expander.Header>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="{Binding HeaderText}" FontWeight="SemiBold" FontSize="13"/>
+            </StackPanel>
+        </Expander.Header>
+
+        <Grid RowDefinitions="Auto,Auto" RowSpacing="8" Margin="0,4,0,0">
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="14">
+                <ToggleSwitch Content="显示详细信息"
+                              FontSize="12"
+                              OnContent="显示详细信息"
+                              OffContent="显示详细信息"
+                              IsChecked="{Binding ShowDetails, Mode=TwoWay}"/>
+                <Button Content="复制全部" Click="ButtonCopy_OnClick" FontSize="12" Padding="10,2"/>
+                <Button Content="清空" Click="ButtonClear_OnClick" FontSize="12" Padding="10,2"/>
+            </StackPanel>
+
+            <Border Grid.Row="1"
+                    CornerRadius="6"
+                    Padding="8,6"
+                    MaxHeight="200"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="18,*,Auto" Margin="0,1" IsVisible="{Binding IsVisible}">
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding Glyph}"
+                                               Foreground="{Binding GlyphBrush}"
+                                               FontWeight="Bold"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding Text}"
+                                               TextWrapping="Wrap"
+                                               FontSize="12"
+                                               Opacity="{Binding TextOpacity}"/>
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding TimeText}"
+                                               FontSize="11"
+                                               Opacity="0.45"
+                                               Margin="10,0,0,0"
+                                               VerticalAlignment="Top"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Expander>
+</UserControl>

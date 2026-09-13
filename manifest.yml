@@ -1,0 +1,10 @@
+id: facelate.attendance
+name: 人脸考勤
+description: 在设定的时间自动用摄像头连拍多张照片，调用本地开源轻量人脸模型（YuNet 检测 + 多款可选识别模型）与花名册逐个比对，自动找出考勤迟到的同学，并在主界面组件中展示迟到名单；支持按星期分别设置时间、多张脸时手动框选、多款识别模型自动挑选，也可挂到自动化规则集上（例如晚自习）。
+entranceAssembly: "ClassIsland.Plugin.FaceLate.dll"
+url: https://github.com/ClassIsland/ExamplePlugins
+# 2.1.0 起才有设置页分组菜单（AddSettingsPageGroup + [Group]）与自动化行动，
+# 所以这里要求宿主至少是 2.1.0。
+apiVersion: 2.1.0.0
+version: 1.2.2.0
+author: FaceLate

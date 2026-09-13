@@ -1,0 +1,33 @@
+<ci:ComponentBase x:Class="ClassIsland.Plugin.FaceLate.Controls.LateListComponentSettingsControl"
+                  x:TypeArguments="models:LateListComponentSettings"
+                  xmlns="https://github.com/avaloniaui"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                  xmlns:local="clr-namespace:ClassIsland.Plugin.FaceLate.Controls"
+                  xmlns:models="clr-namespace:ClassIsland.Plugin.FaceLate.Models"
+                  mc:Ignorable="d"
+                  d:DesignHeight="260" d:DesignWidth="400">
+    <Grid DataContext="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=local:LateListComponentSettingsControl}}">
+        <StackPanel Spacing="8" MinWidth="300" HorizontalAlignment="Left">
+            <TextBox Watermark="组件标题，如：早读迟到"
+                     Text="{Binding Settings.Title}"/>
+            <NumericUpDown Value="{Binding MaxDisplayNamesValue, Mode=TwoWay}"
+                           Minimum="0"
+                           Maximum="60"
+                           Increment="1"
+                           FormatString="0"
+                           ShowButtonSpinner="True"/>
+            <TextBlock Text="名单最多显示人数（0 = 全部显示，超出部分显示为「等 N 人」）"
+                       FontSize="11"
+                       Opacity="0.7"
+                       TextWrapping="Wrap"/>
+            <ToggleSwitch Content="没有迟到时隐藏组件" IsChecked="{Binding Settings.HideWhenEmpty}"/>
+            <ToggleSwitch Content="上课时自动隐藏" IsChecked="{Binding Settings.HideWhenOnClass}"/>
+            <ToggleSwitch Content="只在课间显示" IsChecked="{Binding Settings.ShowOnlyOnBreak}"/>
+            <ToggleSwitch Content="显示识别状态行" IsChecked="{Binding Settings.ShowStatusLine}"/>
+            <ToggleSwitch Content="显示识别时间与耗时" IsChecked="{Binding Settings.ShowDetectTime}"/>
+        </StackPanel>
+    </Grid>
+</ci:ComponentBase>

@@ -1,0 +1,156 @@
+<ci:SettingsPageBase x:Class="ClassIsland.Plugin.FaceLate.Views.SettingsPages.EnrollSettingsPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="clr-namespace:ClassIsland.Plugin.FaceLate.Controls"
+                     mc:Ignorable="d"
+                     d:DesignHeight="620" d:DesignWidth="1060">
+    <ci:SettingsPageBase.Styles>
+        <Style Selector="TextBlock.groupLabel">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Opacity" Value="0.6"/>
+            <Setter Property="Margin" Value="2,5,0,0"/>
+        </Style>
+    </ci:SettingsPageBase.Styles>
+
+    <ScrollViewer>
+        <StackPanel Spacing="10" Margin="0,0,0,24">
+
+            <TextBlock Classes="groupLabel" Text="按文件名自动匹配"/>
+
+            <controls:SettingCard Title="批量导入"
+                                  Subtitle="文件名带学生姓名就自动归档；对不上、或同时对到好几个人的，会列出来让你选"
+                                  IconGlyph="&#xE8E5;">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="选择照片…" Click="ButtonBatchPickFiles_OnClick" IsEnabled="{Binding Busy.IsIdle}"/>
+                    <Button Content="选择文件夹…" Click="ButtonBatchPickFolder_OnClick" IsEnabled="{Binding Busy.IsIdle}"/>
+                    <TextBlock x:Name="TextBatchProgress" VerticalAlignment="Center" Opacity="0.7" FontSize="12"/>
+                </StackPanel>
+            </controls:SettingCard>
+
+            <Border x:Name="BorderBatchResult" IsVisible="False" CornerRadius="8" Padding="12"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock x:Name="TextBatchSummary" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="TextBatchDetail" TextWrapping="Wrap" FontSize="12" Opacity="0.7"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Classes="groupLabel" Text="每张都问你一句"/>
+
+            <controls:SettingCard Title="智能导入"
+                                  Subtitle="文件名乱也没事：先认出最像谁，再问你「是 XXX 吗」。还没有样本时认不出，请先用上面的批量导入"
+                                  IconGlyph="&#xE9D5;">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="选择照片…" Click="ButtonSmartPickFiles_OnClick" IsEnabled="{Binding Busy.IsIdle}"/>
+                    <Button Content="选择文件夹…" Click="ButtonSmartPickFolder_OnClick" IsEnabled="{Binding Busy.IsIdle}"/>
+                    <Button Content="中止本次导入" Click="ButtonCancelImport_OnClick"
+                            IsVisible="{Binding Busy.IsBusy}"/>
+                </StackPanel>
+            </controls:SettingCard>
+
+            <!-- 确认面板：内嵌在页面里，不用弹窗，避免窗口/线程上的一堆坑 -->
+            <Border IsVisible="{Binding Prompt.Visible}"
+                    CornerRadius="8"
+                    Padding="14"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{Binding Prompt.ProgressText}" FontSize="12" Opacity="0.62" TextWrapping="Wrap"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="14">
+                        <Border CornerRadius="6" Padding="2" VerticalAlignment="Top"
+                                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1">
+                            <Image Source="{Binding Prompt.Thumbnail}" Width="150" Height="150" Stretch="Uniform"/>
+                        </Border>
+                        <StackPanel Spacing="10" VerticalAlignment="Center" MaxWidth="420">
+                            <TextBlock Text="{Binding Prompt.Title}" FontWeight="Bold" FontSize="15" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding Prompt.Note}" FontSize="12" Opacity="0.7" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="归给" VerticalAlignment="Center"/>
+                                <ComboBox Width="220"
+                                          ItemsSource="{Binding Prompt.Candidates}"
+                                          SelectedItem="{Binding Prompt.SelectedCandidate, Mode=TwoWay}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding DisplayName}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- 照片里有多张脸时，让用户点一张；非合照时整块隐藏 -->
+                    <StackPanel Spacing="8" IsVisible="{Binding Prompt.NeedsFaceChoice}">
+                        <Border CornerRadius="8" Padding="4"
+                                Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1">
+                            <Image Source="{Binding Prompt.AnnotatedPreview}" MaxHeight="230" Stretch="Uniform"/>
+                        </Border>
+                        <TextBlock Text="照片里有好几张脸，点一下要导入的那一张（编号与预览图一致）："
+                                   FontSize="12" Opacity="0.7" TextWrapping="Wrap"/>
+                        <ItemsControl ItemsSource="{Binding Prompt.Faces}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Margin="0,0,10,10" Padding="6"
+                                            Click="ButtonPickFace_OnClick"
+                                            Tag="{Binding}">
+                                        <StackPanel Spacing="4" Width="120">
+                                            <Border CornerRadius="6" ClipToBounds="True"
+                                                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                                                <Image Source="{Binding Thumbnail}" Width="120" Height="120"
+                                                       Stretch="UniformToFill"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding DisplayText}"
+                                                       FontSize="11" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- 按钮分布：左边是「继续处理」，最右边单独放「中止」，避免误点 -->
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="中止" Click="ButtonAbort_OnClick"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="是，导入给这位同学" Click="ButtonAccept_OnClick"/>
+                            <Button Content="不是，跳过这张" Click="ButtonSkip_OnClick"/>
+                            <Button Content="新建同学并导入" Click="ButtonCreateNew_OnClick"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <TextBlock Text="{Binding Prompt.NewNameHint}" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <Border x:Name="BorderSmartResult" IsVisible="False" CornerRadius="8" Padding="12"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+                <StackPanel Spacing="4">
+                    <TextBlock x:Name="TextSmartSummary" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="TextSmartDetail" TextWrapping="Wrap" FontSize="12" Opacity="0.7"/>
+                </StackPanel>
+            </Border>
+
+            <controls:ActivityLogView x:Name="LogView"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</ci:SettingsPageBase>

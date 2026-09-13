@@ -1,0 +1,80 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    ClassIsland 2.x 插件工程。
+    适配范围：ClassIsland 2.0.x ~ 2.1.0.x（.NET 8）。
+    如果你使用 ClassIsland 2.1.1 及以上（.NET 10），请把 TargetFramework 改成 net10.0，
+    并把下面的 ClassIslandPluginSdkVersion 改成 2.1.1.1 或更高。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <Configurations>Debug;Release</Configurations>
+    <CreateCipx>true</CreateCipx>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <RootNamespace>ClassIsland.Plugin.FaceLate</RootNamespace>
+    <AssemblyName>ClassIsland.Plugin.FaceLate</AssemblyName>
+    <Version>1.2.2.0</Version>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      SDK 版本必须 >= 2.1.0：设置页的分组菜单要用 ClassIsland.Core 的
+      AddSettingsPageGroup + [Group] 特性，这两个是 2.1.0 才加进来的。
+      2.1.0.1 与本机安装的 ClassIsland 2.1.0.1 完全对应，TargetFramework 仍是 net8.0。
+    -->
+    <ClassIslandPluginSdkVersion>2.1.0.1</ClassIslandPluginSdkVersion>
+    <OpenCvSharpVersion>4.13.0.20260627</OpenCvSharpVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClassIsland.PluginSdk" Version="$(ClassIslandPluginSdkVersion)">
+      <ExcludeAssets>runtime; native</ExcludeAssets>
+    </PackageReference>
+    <!-- OpenCvSharp：摄像头采集 + YuNet 人脸检测 + SFace 人脸特征提取，全部本地 CPU 推理 -->
+    <PackageReference Include="OpenCvSharp4" Version="$(OpenCvSharpVersion)" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="$(OpenCvSharpVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="manifest.yml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!--
+      人脸模型随插件一起打包。
+      插件运行时会用 Assembly.Location 定位「插件自己的目录」，再从这里加载，
+      所以打包后开箱即用、不需要联网（学校网络访问不了 GitHub / HuggingFace）。
+    -->
+    <None Update="Assets\Models\*.onnx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!--
+    OpenCvSharp 的原生库默认放在 runtimes/win-x64/native/ 下。
+    插件以动态加载方式运行，把原生库拷到输出根目录可以避免加载失败。
+    同时挂在 Build 与 CreateCipx 上，确保打包成 .cipx 之前一定执行过。
+  -->
+  <Target Name="CopyOpenCvNative" AfterTargets="Build" BeforeTargets="CreateCipx">
+    <ItemGroup>
+      <_FaceLateOcvNative Include="$(OutputPath)runtimes\win-x64\native\*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_FaceLateOcvNative)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true"
+          Condition="'@(_FaceLateOcvNative)' != ''" />
+    <Message Text="FaceLate: 已复制 OpenCV 原生库 $(OutputPath)"
+             Importance="high"
+             Condition="'@(_FaceLateOcvNative)' != ''" />
+  </Target>
+
+</Project>

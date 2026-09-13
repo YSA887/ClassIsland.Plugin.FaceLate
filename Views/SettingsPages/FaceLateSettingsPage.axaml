@@ -1,0 +1,302 @@
+<ci:SettingsPageBase x:Class="ClassIsland.Plugin.FaceLate.Views.SettingsPages.FaceLateSettingsPage"
+                     xmlns="https://github.com/avaloniaui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                     xmlns:ci="http://classisland.tech/schemas/xaml/core"
+                     xmlns:controls="clr-namespace:ClassIsland.Plugin.FaceLate.Controls"
+                     mc:Ignorable="d"
+                     d:DesignHeight="620" d:DesignWidth="1060">
+    <ci:SettingsPageBase.Styles>
+        <!-- 顶边栏导航项：去掉单选圆点，做成胶囊标签 -->
+        <Style Selector="RadioButton.navTab">
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="PART_Border"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}"
+                            Background="Transparent">
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="RadioButton.navTab:pointerover /template/ Border#PART_Border">
+            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}"/>
+        </Style>
+        <Style Selector="RadioButton.navTab:checked /template/ Border#PART_Border">
+            <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+        </Style>
+        <Style Selector="RadioButton.navTab:checked /template/ ContentPresenter">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+        </Style>
+        <!-- 分组小标题 -->
+        <Style Selector="TextBlock.groupLabel">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Opacity" Value="0.6"/>
+            <Setter Property="Margin" Value="2,5,0,0"/>
+        </Style>
+    </ci:SettingsPageBase.Styles>
+
+    <DockPanel>
+
+        <!-- 顶边栏：左边切页，右边常驻状态。原来那两条堆在正文里的灰色信息条并到这一行。 -->
+        <Border DockPanel.Dock="Top"
+                Margin="0,0,0,10"
+                CornerRadius="8"
+                Padding="4"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4">
+                    <RadioButton x:Name="TabBasic" Classes="navTab" GroupName="FaceLateNav"
+                                 IsChecked="True" Content="基本"
+                                 Checked="NavTab_OnChecked"/>
+                    <RadioButton x:Name="TabSchedule" Classes="navTab" GroupName="FaceLateNav"
+                                 Content="时间计划"
+                                 Checked="NavTab_OnChecked"/>
+                    <RadioButton x:Name="TabCamera" Classes="navTab" GroupName="FaceLateNav"
+                                 Content="摄像头"
+                                 Checked="NavTab_OnChecked"/>
+                    <RadioButton x:Name="TabArchive" Classes="navTab" GroupName="FaceLateNav"
+                                 Content="存档与日志"
+                                 Checked="NavTab_OnChecked"/>
+                </StackPanel>
+
+                <TextBlock x:Name="TextBanner"
+                           Grid.Column="2"
+                           Margin="0,0,10,0"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Opacity="0.72"
+                           TextTrimming="CharacterEllipsis"/>
+            </Grid>
+        </Border>
+
+        <ScrollViewer>
+            <StackPanel Spacing="10" Margin="0,0,0,24">
+
+                <!-- ==================== 页 1：基本 ==================== -->
+                <StackPanel x:Name="PageBasic" Spacing="10">
+                    <TextBlock Classes="groupLabel" Text="考勤开关"/>
+
+                    <controls:SettingCard Title="启用自动考勤"
+                                          Subtitle="关掉后不会自动抓拍"
+                                          IconGlyph="&#xE7E8;">
+                        <ToggleSwitch IsChecked="{Binding Settings.Enabled, Mode=TwoWay}"
+                                      OnContent="" OffContent=""/>
+                    </controls:SettingCard>
+
+                    <TextBlock Classes="groupLabel" Text="判定逻辑"/>
+
+                    <controls:SettingCard Title="判定方式"
+                                          Subtitle="教室用「缺席」，门口用「出现」"
+                                          IconGlyph="&#xE9D5;">
+                        <ComboBox x:Name="ComboBoxJudgeMode"
+                                  Width="330"
+                                  SelectionChanged="ComboBoxJudgeMode_OnSelectionChanged">
+                            <ComboBoxItem Content="教室抓拍 · 缺席判定"/>
+                            <ComboBoxItem Content="门口抓拍 · 出现判定"/>
+                        </ComboBox>
+                    </controls:SettingCard>
+
+                    <controls:SettingCard Title="补执行窗口"
+                                          Subtitle="单位分钟。启动晚了也补做一次"
+                                          IconGlyph="&#xE916;">
+                        <NumericUpDown Width="130" Minimum="1" Maximum="180" Increment="1"
+                                       Value="{Binding GraceMinutes, Mode=TwoWay}"/>
+                    </controls:SettingCard>
+                </StackPanel>
+
+                <!-- ==================== 页 2：时间计划 ==================== -->
+                <StackPanel x:Name="PageSchedule" Spacing="10" IsVisible="False">
+                    <TextBlock Classes="groupLabel" Text="下次执行"/>
+
+                    <Border CornerRadius="8" Padding="12,9"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1">
+                        <StackPanel Spacing="3">
+                            <TextBlock x:Name="TextNextRun" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="TextPlan" FontSize="12" Opacity="0.62" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Classes="groupLabel" Text="每周计划"/>
+
+                    <controls:SettingCard Title="批量设置"
+                                          Subtitle="不想一天天点就用这两个菜单"
+                                          IconGlyph="&#xE8EF;">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="批量启用 ▾">
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuItem Header="周一至周五：启用" Click="MenuEnableWeekdays_OnClick"/>
+                                        <MenuItem Header="周六、周日：启用" Click="MenuEnableWeekend_OnClick"/>
+                                        <MenuItem Header="七天都启用" Click="MenuEnableAll_OnClick"/>
+                                        <MenuItem Header="七天都停用" Click="MenuDisableAll_OnClick"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                            <Button Content="套用时间 ▾">
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuItem Header="把周一的时间套到其余各天" Click="MenuCopyMondayTime_OnClick"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </controls:SettingCard>
+
+                    <Border CornerRadius="8" Padding="14,12"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="60,64,*,120" ColumnSpacing="8">
+                                <TextBlock Grid.Column="0" Text="星期" FontSize="11" Opacity="0.55"/>
+                                <TextBlock Grid.Column="1" Text="执行" FontSize="11" Opacity="0.55"/>
+                                <TextBlock Grid.Column="2" Text="抓拍时间" FontSize="11" Opacity="0.55"/>
+                                <TextBlock Grid.Column="3" Text="" FontSize="11"/>
+                            </Grid>
+
+                            <ItemsControl ItemsSource="{Binding Settings.WeekSchedule}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="60,64,*,120" ColumnSpacing="8" Margin="0,1">
+                                            <TextBlock Grid.Column="0" Text="{Binding DayName}"
+                                                       VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                                                          IsChecked="{Binding Enabled, Mode=TwoWay}"
+                                                          OnContent="" OffContent=""/>
+                                            <TextBox Grid.Column="2" Watermark="07:20 或 07:20,19:00"
+                                                     VerticalAlignment="Center"
+                                                     MaxWidth="260" HorizontalAlignment="Left"
+                                                     Text="{Binding Times, Mode=TwoWay}"/>
+                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4"
+                                                        HorizontalAlignment="Right">
+                                                <Button Content="+ 当前" FontSize="11" Padding="8,2"
+                                                        ToolTip.Tip="把当前的时刻追加到这一行"
+                                                        Click="ButtonAppendNow_OnClick"/>
+                                                <Button Content="清空" FontSize="11" Padding="8,2"
+                                                        Click="ButtonClearDay_OnClick"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Text="一天可以填多个时间，用逗号隔开，例如 07:20,19:00。"
+                                       Margin="0,6,0,0" FontSize="11" Opacity="0.55" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ==================== 页 3：摄像头 ==================== -->
+                <StackPanel x:Name="PageCamera" Spacing="10" IsVisible="False">
+                    <TextBlock Classes="groupLabel" Text="设备"/>
+
+                    <controls:SettingCard Title="摄像头序号"
+                                          Subtitle="一般填 0，有多个摄像头时试 1、2"
+                                          IconGlyph="&#xE714;">
+                        <NumericUpDown Width="130" Minimum="0" Maximum="9" Increment="1"
+                                       Value="{Binding CameraIndexValue, Mode=TwoWay}"/>
+                    </controls:SettingCard>
+
+                    <controls:SettingCard Title="抓拍分辨率"
+                                          Subtitle="默认 1280×720，后排也看得清"
+                                          IconGlyph="&#xE7F4;">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <NumericUpDown Width="110" Minimum="160" Maximum="3840" Increment="160"
+                                           Value="{Binding CaptureWidthValue, Mode=TwoWay}"/>
+                            <TextBlock Text="×" VerticalAlignment="Center"/>
+                            <NumericUpDown Width="110" Minimum="120" Maximum="2160" Increment="120"
+                                           Value="{Binding CaptureHeightValue, Mode=TwoWay}"/>
+                        </StackPanel>
+                    </controls:SettingCard>
+
+                    <TextBlock Classes="groupLabel" Text="连拍"/>
+
+                    <controls:SettingCard Title="抓拍张数"
+                                          Subtitle="4~6 张即可"
+                                          IconGlyph="&#xE9D5;">
+                        <NumericUpDown Width="130" Minimum="1" Maximum="20" Increment="1"
+                                       Value="{Binding ShotCountValue, Mode=TwoWay}"/>
+                    </controls:SettingCard>
+
+                    <controls:SettingCard Title="抓拍间隔"
+                                          Subtitle="单位毫秒，太快照片会糊"
+                                          IconGlyph="&#xE916;">
+                        <NumericUpDown Width="130" Minimum="0" Maximum="5000" Increment="100"
+                                       Value="{Binding ShotIntervalValue, Mode=TwoWay}"/>
+                    </controls:SettingCard>
+
+                    <controls:SettingCard Title="开摄像头预热"
+                                          Subtitle="单位秒，避免前几张偏暗"
+                                          IconGlyph="&#xE945;">
+                        <NumericUpDown Width="130" Minimum="0" Maximum="10" Increment="1"
+                                       Value="{Binding WarmUpValue, Mode=TwoWay}"/>
+                    </controls:SettingCard>
+
+                    <TextBlock Classes="groupLabel" Text="自检"/>
+
+                    <controls:SettingCard Title="摄像头工具"
+                                          Subtitle="先测一下摄像头能不能用"
+                                          IconGlyph="&#xE8B7;">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Content="测试与目录 ▾">
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuItem Header="测试摄像头（抓一帧）" Click="MenuTestCamera_OnClick"/>
+                                        <MenuItem Header="打开抓拍存档目录" Click="MenuOpenSnapshots_OnClick"/>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                            <TextBlock x:Name="TextCameraStatus" VerticalAlignment="Center"
+                                       TextWrapping="Wrap" Opacity="0.75" FontSize="12"/>
+                        </StackPanel>
+                    </controls:SettingCard>
+
+                    <Border x:Name="BorderPreview" IsVisible="False" CornerRadius="8" Padding="4"
+                            HorizontalAlignment="Left"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1">
+                        <Image x:Name="ImagePreview" MaxWidth="420" MaxHeight="315" Stretch="Uniform"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- ==================== 页 4：存档与日志 ==================== -->
+                <StackPanel x:Name="PageArchive" Spacing="10" IsVisible="False">
+                    <TextBlock Classes="groupLabel" Text="抓拍存档"/>
+
+                    <controls:SettingCard Title="保留抓拍照片"
+                                          Subtitle="方便事后复核哪张判错了"
+                                          IconGlyph="&#xE8B7;">
+                        <ToggleSwitch IsChecked="{Binding Settings.KeepSnapshots, Mode=TwoWay}"
+                                      OnContent="" OffContent=""/>
+                    </controls:SettingCard>
+
+                    <controls:SettingCard Title="照片保留天数"
+                                          Subtitle="到期自动清理"
+                                          IconGlyph="&#xE916;">
+                        <NumericUpDown Width="130" Minimum="1" Maximum="120" Increment="1"
+                                       Value="{Binding SnapshotKeepDaysValue, Mode=TwoWay}"/>
+                    </controls:SettingCard>
+
+                    <TextBlock Classes="groupLabel" Text="运行日志"/>
+
+                    <controls:ActivityLogView x:Name="LogView"/>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</ci:SettingsPageBase>
