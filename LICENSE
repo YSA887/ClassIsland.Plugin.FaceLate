@@ -1,0 +1,43 @@
+MIT License
+
+Copyright (c) 2026 YSA887
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## 第三方组件许可
+
+本项目使用了以下第三方开源组件，其许可证独立于本项目：
+
+| 组件 | 许可证 | 说明 |
+| --- | --- | --- |
+| ClassIsland.PluginSdk | LGPLv3 | ClassIsland 插件开发 SDK |
+| OpenCvSharp4 | Apache-2.0 | OpenCV 的 .NET 绑定 |
+| OpenCV (OpenCvSharp 运行时) | Apache-2.0 | 计算机视觉库 |
+| YuNet (face_detection_yunet_2023mar.onnx) | Apache-2.0 | OpenCV Zoo 人脸检测模型 |
+| SFace (face_recognition_sface_2021dec.onnx) | Apache-2.0 | OpenCV Zoo 人脸识别模型 |
+
+### 关于随包发布的 ArcFace 模型
+
+`tools/w600k_mbf.onnx` 来自 [InsightFace](https://github.com/deepinsight/insightface) 项目的
+`buffalo_s` 模型包，其许可证规定**仅供非商业研究用途**。
+
+该模型为**可选项**，插件默认使用 Apache-2.0 许可的 SFace 模型。
+若您出于商业目的使用本项目，请勿使用该可选模型，改用 SFace 即可。
