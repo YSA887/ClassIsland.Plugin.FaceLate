@@ -181,6 +181,30 @@ public sealed class FaceEngine : IDisposable
     private string _recognizerPath = "";
 
     /// <summary>
+    /// 实际交给 OpenCV 的检测模型路径。
+    /// <para>
+    /// <see cref="FaceDetectorYN.Create"/> 只接受文件路径、没有内存加载重载，而 OpenCV
+    /// 内部用 ANSI 窄字符开文件 —— 路径里有中文就一定读不出来。所以路径含非 ASCII 字符时，
+    /// 这里指向 <see cref="AsciiModelPath"/> 复制出来的纯 ASCII 副本；其余情况与
+    /// <see cref="_detectorPath"/> 一致。
+    /// </para>
+    /// </summary>
+    private string _detectorLoadPath = "";
+
+    /// <summary>最近一次创建检测器失败的原因，用于把真实病因传给上层。</summary>
+    private string _lastDetectorError = "";
+
+    /// <summary>
+    /// 最近一次 <see cref="Analyze"/> 没有返回人脸的原因；确实是对着空画面（真的没人脸）时为空字符串。
+    /// <para>
+    /// 加这个是因为「没检出人脸」有太多种完全不同的原因（模型没加载、检测器创建失败、
+    /// 路径含中文……），全都被上层统一报成「没有检测到足够大的人脸」，
+    /// 排查时根本看不出到底是哪一环出的问题。
+    /// </para>
+    /// </summary>
+    private string _lastAnalyzeError = "";
+
+    /// <summary>
     /// 检测器缓存：键是输入尺寸，值是按该尺寸创建的检测器。
     /// <see cref="FaceDetectorYN"/> 一个实例只能处理一个固定尺寸，所以按尺寸缓存复用。
     /// 访问必须在 <see cref="_sync"/> 锁内。
@@ -229,6 +253,88 @@ public sealed class FaceEngine : IDisposable
         }
     }
 
+    /// <summary>
+    /// 最近一次 <see cref="Analyze"/> 没能返回人脸的原因；确实只是画面里没有人脸时为空字符串。
+    /// <para>
+    /// 调用方在拿到「0 张脸」时应当先看这个：非空说明是<b>故障</b>（模型没就绪 / 检测器创建失败），
+    /// 而不是照片里真的没有人脸。这样界面才能把「未检测到人脸」换成真正的原因。
+    /// </para>
+    /// </summary>
+    public string LastAnalyzeError
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _lastAnalyzeError;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 统一生成「这张图没人脸」的提示文案。
+    /// <para>
+    /// 有真实故障原因时返回真实原因（例如「检测器初始化失败：路径含中文」），
+    /// 否则才用调用方给的兜底说法（「没有检测到足够大的人脸」）。
+    /// 这样界面上永远不会再出现「明明是环境坏了、却报成人脸没检到」的情况。
+    /// </para>
+    /// </summary>
+    /// <param name="fallback">确实只是没检出人脸时的提示。</param>
+    public string NoFaceMessage(string fallback)
+        => string.IsNullOrEmpty(LastAnalyzeError) ? fallback : LastAnalyzeError;
+
+    /// <summary>
+    /// 自检：检测器到底能不能真的建起来、能不能真的跑一次推理。
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="IsReady"/> 只说明「模型文件找到了、识别模型读进内存了」，
+    /// <b>并不保证检测器能创建成功</b> —— 路径含中文、缺 VC++ 运行库、宿主位数不对
+    /// 都会在创建那一步炸，而且炸完被吞成「未检测到人脸」。
+    /// </para>
+    /// <para>
+    /// 设置页用它做一次真实自检，把「文件都在、但就是跑不起来」这种状态摆到台面上。
+    /// 空跑一张纯灰图（不读任何文件），代价约几十毫秒。
+    /// </para>
+    /// </remarks>
+    /// <returns>是否通过，以及一句人话说明。</returns>
+    public (bool Ok, string Message) SelfTest()
+    {
+        lock (_sync)
+        {
+            if (string.IsNullOrEmpty(_detectorPath) || _recognizer == null)
+            {
+                return (false, "模型尚未载入内存 —— 点上面的「载入 / 重新载入模型」试试。");
+            }
+
+            var target = new Size(DetectorWorkWidth, DetectorWorkHeight);
+
+            if (!EnsureDetectorLocked(target))
+            {
+                return (false, string.IsNullOrEmpty(_lastDetectorError)
+                    ? "人脸检测器创建失败。"
+                    : _lastDetectorError);
+            }
+
+            try
+            {
+                using var blank = new Mat(target.Height, target.Width, MatType.CV_8UC3,
+                    new Scalar(128, 128, 128));
+                using var faces = new Mat();
+                _detector!.Detect(blank, faces);
+
+                var name = Path.GetFileName(
+                    string.IsNullOrEmpty(_detectorLoadPath) ? _detectorPath : _detectorLoadPath);
+                return (true, $"检测器可用（{target.Width}×{target.Height}，实际载入 {name}）。");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "FaceLate 检测器自检失败");
+                return (false, "检测器自检失败：" + e.Message);
+            }
+        }
+    }
+
     /// <summary>当前使用的识别模型路径，用于在设置页展示。</summary>
     public string RecognizerPath
     {
@@ -268,7 +374,21 @@ public sealed class FaceEngine : IDisposable
                         _recognizer?.Dispose();
                         _recognizer = null;
 
-                        var loaded = CvDnn.ReadNetFromOnnx(recognizerPath);
+                        // 用 Net? 而不是 Net：OpenCvSharp 的返回类型在库侧没有可空性标注，
+                        // 显式写成非空会平白多出一条 CS8600；下面本来就紧跟 null 判断。
+                        Net? loaded;
+                        try
+                        {
+                            loaded = CvDnn.ReadNetFromOnnx(recognizerPath);
+                        }
+                        catch (Exception) when (!AsciiModelPath.IsAscii(recognizerPath))
+                        {
+                            // 路径含非 ASCII 字符（中文目录）时，个别 OpenCV 版本按路径读不出来。
+                            // CvDnn 有字节数组重载，退化成「先读进内存再解析」，与路径彻底无关。
+                            _logger.LogWarning("FaceLate 识别模型按路径加载失败，改用内存方式重试：{Path}", recognizerPath);
+                            loaded = CvDnn.ReadNetFromOnnx(File.ReadAllBytes(recognizerPath));
+                        }
+
                         if (loaded == null || loaded.Empty())
                         {
                             loaded?.Dispose();
@@ -300,6 +420,26 @@ public sealed class FaceEngine : IDisposable
                         _detectorPool.Clear();
 
                         _detectorPath = detectorPath;
+
+                        // 检测模型必须用「纯 ASCII 路径」交给 OpenCV：
+                        // FaceDetectorYN 没有内存加载重载，只能给文件路径，而 OpenCV 内部按 ANSI
+                        // 窄字符开文件 —— 路径含中文（装在中文目录、或用户名是中文）就会稳定失败，
+                        // 而且失败会被上层吞成「未检测到人脸」，极难定位。这里统一转成 ASCII 副本。
+                        _detectorLoadPath = AsciiModelPath.Resolve(
+                                                detectorPath, "face_detection_yunet.onnx", _logger)
+                                            ?? detectorPath;
+
+                        // 走了副本就把这件事写进日志 —— 以后要是再出「检不到脸」，
+                        // 一看日志就知道实际加载的是哪个文件，不用猜。
+                        if (!string.Equals(_detectorLoadPath, detectorPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _logger.LogInformation(
+                                "FaceLate 检测模型路径含非 ASCII 字符，已改用 ASCII 副本加载：{LoadPath}",
+                                _detectorLoadPath);
+                        }
+
+                        // 换了检测模型，之前的失败原因作废。
+                        _lastDetectorError = "";
                     }
                 }
             }).ConfigureAwait(false);
@@ -364,6 +504,7 @@ public sealed class FaceEngine : IDisposable
         {
             if (string.IsNullOrEmpty(_detectorPath) || _recognizer == null)
             {
+                _lastAnalyzeError = "人脸模型尚未载入内存。请在插件设置里点「载入模型」，或重新运行一次考勤以触发自动载入。";
                 return result;
             }
 
@@ -372,8 +513,15 @@ public sealed class FaceEngine : IDisposable
 
             if (!EnsureDetectorLocked(target))
             {
+                _lastAnalyzeError = string.IsNullOrEmpty(_lastDetectorError)
+                    ? "人脸检测器初始化失败。"
+                    : "人脸检测器初始化失败：" + _lastDetectorError;
                 return result;
             }
+
+            // 检测器已经就绪 —— 到这里之后再出现 0 张脸，就是画面里确实没有人脸，
+            // 不是故障，所以把故障原因清空。
+            _lastAnalyzeError = "";
 
             // scale = 原图 / 工作图。检测完把框和关键点乘回去就还原到原图坐标了。
             var scaleX = (double)bgr.Width / target.Width;
@@ -533,9 +681,13 @@ public sealed class FaceEngine : IDisposable
             return true;
         }
 
+        // 注意用 _detectorLoadPath 而不是 _detectorPath：
+        // 前者保证是纯 ASCII 路径（原路径含中文时会指向复制出来的副本）。
+        var modelPath = string.IsNullOrEmpty(_detectorLoadPath) ? _detectorPath : _detectorLoadPath;
+
         try
         {
-            var created = FaceDetectorYN.Create(_detectorPath, "", size,
+            var created = FaceDetectorYN.Create(modelPath, "", size,
                 DetectScoreThreshold, 0.3f, 5000);
 
             // 换新的之前把当前这个按原尺寸收回缓存，下次遇到就能直接复用。
@@ -570,7 +722,27 @@ public sealed class FaceEngine : IDisposable
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "FaceLate 创建人脸检测器失败（{Size}）", size);
+            _logger.LogError(e, "FaceLate 创建人脸检测器失败（{Size}，模型 {Path}）", size, modelPath);
+
+            // 这里刻意把「病因」分类记下来：上层拿到 0 张脸时会优先播报它，
+            // 否则用户只会看到一句「没有检测到足够大的人脸」，完全联想不到是环境问题。
+            _lastDetectorError = e switch
+            {
+                DllNotFoundException or BadImageFormatException =>
+                    "OpenCV 原生库（OpenCvSharpExtern.dll）加载失败。"
+                    + "常见原因是系统缺少 Microsoft Visual C++ 运行库，或宿主程序的位数与插件原生库不一致。",
+
+                TypeInitializationException or EntryPointNotFoundException =>
+                    "OpenCV 原生库加载失败：" + e.Message,
+
+                _ when !AsciiModelPath.IsAscii(_detectorPath) =>
+                    "检测模型所在路径含非 ASCII 字符（例如中文目录），OpenCV 读不出来："
+                    + _detectorPath
+                    + "。请把 ClassIsland 换到纯英文路径下，或检查该目录是否可读。",
+
+                _ => e.Message,
+            };
+
             return false;
         }
     }

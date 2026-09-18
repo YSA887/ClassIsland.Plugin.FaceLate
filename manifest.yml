@@ -4,7 +4,7 @@ description: 在设定的时间自动用摄像头连拍多张照片，调用本�
 entranceAssembly: "ClassIsland.Plugin.FaceLate.dll"
 url: https://github.com/YSA887/ClassIsland.Plugin.FaceLate
 author: YSA887
-version: 1.2.2.0
+version: 1.2.3.0
 # 2.1.0 起才有设置页分组菜单（AddSettingsPageGroup + [Group]）与自动化行动，
 # 所以这里要求宿主至少是 2.1.0。
 apiVersion: 2.1.0.0

@@ -47,6 +47,12 @@ public partial class ModelSettingsPage : SettingsPageBase
     private readonly ActivityLog _log;
     private bool _initializing;
 
+    /// <summary>
+    /// 上一次自检是不是没通过。
+    /// <para>用来在「由好变坏」的那一刻往运行日志里记一条，而不是每次刷新页面都记。</para>
+    /// </summary>
+    private bool _selfTestFailed;
+
     /// <summary>正在由代码写入阈值输入框（避免把「同步显示」当成用户手动修改存进设置）。</summary>
     private bool _syncingThreshold;
 
@@ -232,7 +238,31 @@ public partial class ModelSettingsPage : SettingsPageBase
         var status = _models.CheckStatus();
         TextModelStatus.Text = status.Summary;
         TextModelDetail.Text = status.Detail;
-        TextBusyHint.Text = _engine.IsReady ? "模型已在内存中就绪。" : "模型尚未载入内存。";
+
+        // 「文件都在」不等于「跑得起来」：路径含中文、缺 VC++ 运行库、宿主位数不对，
+        // 都会让检测器在创建那一刻失败，而失败会被上层吞成「未检测到人脸」，
+        // 光看文件状态永远查不出来。这里真建一次检测器再空跑一次，把真实状态摆出来。
+        if (!_engine.IsReady)
+        {
+            TextBusyHint.Text = "模型尚未载入内存。";
+            _selfTestFailed = false;
+        }
+        else
+        {
+            var (ok, message) = _engine.SelfTest();
+            TextBusyHint.Text = ok ? message : "自检未通过：" + message;
+
+            // 只在「由好变坏」时记一条，避免每次刷新页面都往日志里塞重复错误。
+            if (!ok && !_selfTestFailed)
+            {
+                _selfTestFailed = true;
+                _log.Error("模型自检未通过：" + message);
+            }
+            else if (ok)
+            {
+                _selfTestFailed = false;
+            }
+        }
 
         // 换了模型，阈值和说明都可能变，一起刷新（写输入框时打个标记，别当成用户改的）。
         _syncingThreshold = true;

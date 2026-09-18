@@ -690,7 +690,9 @@ public sealed class AttendanceService : ObservableObjectBase
             var faces = await Task.Run(() => _engine.Analyze(image, withFeature: true)).ConfigureAwait(false);
             if (faces.Count == 0)
             {
-                return (0, "这张图片里没有检测到人脸（人脸太小或太模糊时会被忽略）。现在会自动按原图比例缩放检测，如果还检不到，请确认照片里的人脸是否清晰、占比是否够大。");
+                return (0, _engine.NoFaceMessage(
+                    "这张图片里没有检测到人脸（人脸太小或太模糊时会被忽略）。" +
+                    "现在会自动按原图比例缩放检测，如果还检不到，请确认照片里的人脸是否清晰、占比是否够大。"));
             }
 
             var ordered = faces.OrderByDescending(x => x.Area).ToList();

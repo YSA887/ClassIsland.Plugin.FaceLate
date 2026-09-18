@@ -39,6 +39,14 @@ public sealed class ImportSummary
     /// <summary>是否被用户中止。</summary>
     public bool Cancelled { get; set; }
 
+    /// <summary>
+    /// 这一批里是否已经把「环境故障」（模型没载入、检测器创建失败等）写进运行日志。
+    /// <para>
+    /// 环境故障会让<b>每一张</b>照片都失败，逐张报错会把日志刷爆，所以只报第一条。
+    /// </para>
+    /// </summary>
+    public bool EnvironmentFaultLogged { get; set; }
+
     /// <summary>成功导入的照片数。</summary>
     public int OkCount => Items.Count(x => x.Ok);
 
@@ -335,7 +343,23 @@ public sealed class EnrollmentService
                 {
                     var reason = probe?.Error is { Length: > 0 } err ? err : "没有检测到足够大的人脸";
                     summary.Items.Add(new ImportItemResult { FileName = fileName, Ok = false, Message = reason });
-                    _log.Detail($"跳过「{fileName}」：{reason}");
+
+                    // 区分两种情况：真是这张照片里没人脸（细节级），
+                    // 还是模型/环境出了问题（错误级 —— 这种情况下一整批都会失败，
+                    // 用户必须能在「运行日志」里一眼看到真实原因，而不是只看到「跳过」）。
+                    if (_engine.LastAnalyzeError is { Length: > 0 })
+                    {
+                        if (!summary.EnvironmentFaultLogged)
+                        {
+                            summary.EnvironmentFaultLogged = true;
+                            _log.Error(_engine.LastAnalyzeError);
+                        }
+                    }
+                    else
+                    {
+                        _log.Detail($"跳过「{fileName}」：{reason}");
+                    }
+
                     done++;
                     continue;
                 }
@@ -553,7 +577,13 @@ public sealed class EnrollmentService
                 var faces = _engine.Analyze(image, withFeature: true);
                 if (faces.Count == 0)
                 {
-                    return new ImportItemResult { FileName = fileName, Student = student, Ok = false, Message = "没有检测到足够大的人脸" };
+                    return new ImportItemResult
+                    {
+                        FileName = fileName,
+                        Student = student,
+                        Ok = false,
+                        Message = _engine.NoFaceMessage("没有检测到足够大的人脸"),
+                    };
                 }
 
                 // 批量导入（按文件名）不弹窗，只能自动挑。取面积最大的一张 ——
@@ -611,7 +641,9 @@ public sealed class EnrollmentService
             probe.Faces = faces.OrderByDescending(x => x.Area).ToList();
             if (probe.Faces.Count == 0)
             {
-                probe.Error = "没有检测到足够大的人脸";
+                // 优先播报真实故障原因（模型没载入 / 检测器创建失败），
+                // 只有确实只是没人脸时才说「没有检测到足够大的人脸」。
+                probe.Error = _engine.NoFaceMessage("没有检测到足够大的人脸");
             }
 
             return probe;
