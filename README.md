@@ -1,4 +1,4 @@
-# 人脸早读考勤 · ClassIsland 插件
+# 人脸考勤 · ClassIsland 插件
 
 在 ClassIsland 2.x 上运行的**班级人脸考勤插件**：到设定的早读时间点自动用摄像头连拍多张照片，
 调用本地开源轻量人脸模型（YuNet + SFace）自动比对学生人脸库，按花名册找出**迟到的同学**，
@@ -151,9 +151,12 @@ ClassIsland.Plugin.FaceLate/
 ├─ Controls/
 │   ├─ LateListComponent.axaml(.cs)             主界面「早读迟到名单」组件
 │   └─ LateListComponentSettingsControl.axaml(.cs)
-├─ Views/SettingsPages/
-│   ├─ FaceLateSettingsPage.axaml(.cs)          设置：时间 / 摄像头 / 参数 / 模型 / 立即试用
-│   └─ RosterSettingsPage.axaml(.cs)            花名册与人脸录入
+├─ Views/SettingsPages/                （全部挂在「人脸考勤」设置页分组下）
+│   ├─ FaceLateSettingsPage.axaml(.cs)          主设置：基本 / 时间计划 / 摄像头 / 存档与日志
+│   ├─ RosterSettingsPage.axaml(.cs)            花名册与人脸录入
+│   ├─ EnrollSettingsPage.axaml(.cs)            批量导入与智能导入
+│   ├─ ModelSettingsPage.axaml(.cs)             识别与模型（含自检）
+│   └─ RunLogSettingsPage.axaml(.cs)            运行与日志（立即识别一次 + 进度条）
 └─ tools/download-models.ps1            模型下载脚本
 ```
 
@@ -396,7 +399,7 @@ dotnet build -c Release
 5. 还不行就把阈值从推荐值往上调（SFace 0.363 → 0.40~0.45，ArcFace 0.50 → 0.55~0.65）。
 
 **进度条不动 / 没有进度条**
-- v1.0.0 没有进度条，v1.0.1 加上了。执行期间会在「立即试用」下方显示阶段文字 + 进度条。
+- v1.0.0 没有进度条，v1.0.1 加上了。执行期间会在【人脸考勤】→【运行与日志】页显示阶段文字 + 进度条。
 
 **换了识别模型，阈值要不要跟着改？**
 - **不用手动改，也不能照搬**。余弦相似度的分布是跟着模型走的：SFace 官方推荐 **0.363**，
